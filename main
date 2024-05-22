@@ -1,0 +1,288 @@
+#include <iostream>
+#include <cmath>
+#include <chrono>
+using namespace std;
+
+// 
+// Вычисление интеграла методами Симпсона, Гаусса и с использованием схемы с автоматическим выбором шага
+//    __________________________________________________
+//  №|     Function     | Interval |  Method   | Answer |
+//  9| x^3 + 10x^2      |  [-8,2]  |  Simpson  |  713.3 |
+// 10| x^3 - 5x^2       |  [-2,5]  |   Auto    | -69.42 |
+// 11| x^3+6x^2-0.02e^x |  [-5,3]  |  Gauss 2  |  167.6 |
+// 12| x^2+5cos(x)      |  [-1,4]  |  Gauss 3  |  22.09 |
+//    --------------------------------------------------
+//
+// 
+
+
+double simpson(double a, double b, int n);
+void output(double);
+double Auto(double a, double b);
+double Gauss_2nd(double a, double b, int n);
+double Gauss_3rd(double a, double b, int n);
+void inputData(double& a, double& b, int& n, int index);
+
+int main()
+{
+    int n;
+    double a, b; // bounce
+
+
+    bool sd = true;
+    int choice;
+    double answer = -1;
+    while (sd)
+    {
+        cout << "_______________________MENU_______________________" << endl;
+        cout << "\n1: The Simpson method\n2: The Gauss method\n3: Automatic step selection\n4: Gauss 3rd\n0: Exit" << endl;
+        cout << "__________________________________________________" << endl;
+        cout << "Input your choice: ";
+        cin >> choice;
+        cout << "\n" << endl;
+        switch (choice)
+        {
+        case 1:
+            inputData(a, b, n, 1);
+            
+            answer = simpson(a, b, n);
+            
+            output(answer);
+            
+            break;
+        case 2:
+            inputData(a, b, n, 3);
+            answer = Gauss_2nd(a, b, n);
+            output(answer);          
+            break;
+        case 3:
+            inputData(a, b, n, 2);
+           
+            answer = Auto(-2, 5);
+
+            output(answer);
+            break;
+        case 4:
+            inputData(a, b, n, 4);
+            
+            answer = Gauss_3rd(a, b, n);
+
+            output(answer);
+            break;
+        case 0:
+            sd = false;
+            break;
+        default:
+            cin.clear();
+            cout << "Input only 1 or 2 or 3 or 0. Try again\n" << endl;
+            break;
+        }
+    }
+    return 0;
+}
+
+void inputData(double& a, double& b, int& n, int index) {
+    bool c = 1;
+    int v;
+    while (c) {
+        cout << "1) Enter data;\n2) Use default values\n... ";
+        cin >> v;
+        switch (v)
+        {
+        case 1:
+            cout << "Input bounce and amount of attempts" << endl;
+            cout << "a - ";
+            cin >> a;
+            cout << endl << "b - ";
+            cin >> b;
+            cout << endl << "n - ";
+            cin >> n;
+            return;
+            break;
+        case 2:
+            switch (index)
+            {
+            case 1:
+                a = -8;
+                b = 2;
+                n = 3000;
+            break;
+            case 2:
+                a = -2;
+                b = 5;
+                n = 3000;
+            break;
+            case 3:
+                a = -5;
+                b = 3;
+                n = 3000;
+            break;
+            case 4:
+                a = -1;
+                b = 4;
+                n = 3000;
+            break;
+            default:
+                cout << "0_0";
+                abort();
+                break;
+            }
+            return;
+            break;
+        default:
+            cin.clear();
+            cout << "Input 1 or 2";
+            break;
+        }
+    }
+}
+
+double f_S(double x)
+{
+    return pow(x, 3) + 10 * (pow(x, 2));
+}
+
+double f_A(double x)
+{
+    return pow(x, 3) - 5 * pow(x, 2);
+}
+
+double f_G2(double x)
+{
+    return pow(x, 3) + 6 * pow(x, 2) - 0.02 * exp(x);
+}
+
+double f_G3(double x)
+{
+    return pow(x, 2) + 5 * cos(x);
+}
+
+double simpson(double a, double b, int n)
+{
+    auto start_time1 = std::chrono::high_resolution_clock::now(); // 
+
+
+
+    double h = (b - a) / n; // Шаг интегрирования
+
+    double summ = f_S(a) + 4 * f_S(a + 1.5 * h) + f_S(b);
+
+    for (int i = 2; i < n; i += 1)
+    {
+        summ += (2 * f_S(a + h * (i + 0.5)) + f_S(a + i * h));
+    }
+
+
+
+    auto end_time1 = std::chrono::high_resolution_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time1 - start_time1);
+    cout << "\n\n" << duration1.count() << endl;
+
+
+    return summ * h / 3; // Приближенное значение интеграла
+}
+
+double middle(double h, int n, double a)
+{
+    double summ = 1;
+    for (int i = 1; i < n; i++)
+    {
+        summ += f_A(a + h * (i + 0.5));
+    }
+    return summ * h;
+}
+
+double trapezoid(double h, int n, double a)
+{
+    double summ = (f_A(a) + f_A(a + h * (n + 1))) / 2;
+
+    for (int i = 2; i < n; i++)
+    {
+        summ += f_A(a + h * i);
+    }
+
+    return summ * h;
+}
+
+double Auto(double a, double b)
+{
+    auto start_time3 = std::chrono::high_resolution_clock::now();
+    
+   
+    double marg_er = 0.002;
+    int n = 4;
+    double tr, mid;
+    bool ed = 1;
+    while (ed)
+    {
+        double h = (b - a) / n;
+        mid = middle(h, n, a);
+        tr = trapezoid(h, n, a);
+        if (abs(mid - tr) >= marg_er) {
+            n *= 2;
+            continue;
+        }
+        else {
+            auto end_time3 = std::chrono::high_resolution_clock::now();
+            auto duration3 = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time3 - start_time3);
+            cout << "\n\n" << duration3.count() << endl;
+            cout << n << "\n";
+            return (2 * middle(h, n, a) + trapezoid(h, n, a)) / 3;
+        }
+    }
+}
+
+double Gauss_2nd(double a, double b, int n)
+{
+    auto start_time2 = std::chrono::high_resolution_clock::now();
+
+    double h = (b-a) / n;
+    double Xi = a + h / 2;
+    double integral=0;
+    for (int i = 0; i < n; i++) {
+        double Xi1 = Xi - h / 2 * 0.5773502692;
+        double Xi2 = Xi + h / 2 * 0.5773502692;
+        integral += f_G2(Xi1) + f_G2(Xi2);
+        Xi += h;
+    }
+
+
+    auto end_time2 = std::chrono::high_resolution_clock::now();
+    auto duration2 = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time2 - start_time2);
+    cout << "\n\n" << duration2.count() << endl;
+
+
+    return integral * h / 2;
+}
+
+double Gauss_3rd(double a, double b, int n) {
+
+    auto start_time4 = std::chrono::high_resolution_clock::now();
+   
+    
+    double h = (b - a) / n;
+    double Xi = a + h / 2;
+    double integral = 0;
+
+    for (int i = 0; i < n; i++) {
+        double Xi0 = Xi;
+        double Xi1 = Xi - h / 2 * 0.7745966692;
+        double Xi2 = Xi + h / 2 * 0.7745966692;
+
+        integral += ((5./9.)*f_G3(Xi1) + (8./9.)*f_G3(Xi0) + (5./9.)*f_G3(Xi2));
+        Xi += h;
+    }
+
+
+
+    auto end_time4 = std::chrono::high_resolution_clock::now();
+    auto duration4 = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time4 - start_time4);
+    cout << "\n\n" << duration4.count()<< endl;
+
+    return integral * h / 2;
+}
+
+void output(double answer)
+{
+    cout << "Result - " << answer << endl;
+}
